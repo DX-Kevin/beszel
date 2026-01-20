@@ -502,6 +502,19 @@ export default memo(function SystemDetail({ id }: { id: string }) {
 						/>
 					</ChartCard>
 
+					{/* Load Average chart */}
+					{chartData.agentVersion?.minor >= 12 && (
+						<ChartCard
+							empty={dataEmpty}
+							grid={grid}
+							title={t`Load Average`}
+							description={t`System load averages over time`}
+							legend={true}
+						>
+							<LoadAverageChart chartData={chartData} />
+						</ChartCard>
+					)}
+
 					<ChartCard
 						empty={dataEmpty}
 						grid={grid}
@@ -651,19 +664,6 @@ export default memo(function SystemDetail({ id }: { id: string }) {
 							description={t`Swap space used by the system`}
 						>
 							<SwapChart chartData={chartData} />
-						</ChartCard>
-					)}
-
-					{/* Load Average chart */}
-					{chartData.agentVersion?.minor >= 12 && (
-						<ChartCard
-							empty={dataEmpty}
-							grid={grid}
-							title={t`Load Average`}
-							description={t`System load averages over time`}
-							legend={true}
-						>
-							<LoadAverageChart chartData={chartData} />
 						</ChartCard>
 					)}
 
