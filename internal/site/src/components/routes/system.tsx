@@ -223,7 +223,7 @@ export default memo(function SystemDetail({ id }: { id: string }) {
 
 	// subscribe to realtime metrics if chart time is 1m
 	useEffect(() => {
-		let unsub = () => {}
+		let unsub = () => { }
 		if (!system.id || chartTime !== "1m") {
 			return
 		}
@@ -447,6 +447,61 @@ export default memo(function SystemDetail({ id }: { id: string }) {
 
 				{/* main charts */}
 				<div className="grid xl:grid-cols-2 gap-4">
+
+					<ChartCard
+						empty={dataEmpty}
+						grid={grid}
+						title={t`Bandwidth`}
+						cornerEl={
+							<div className="flex gap-2">
+								{maxValSelect}
+								<NetworkSheet chartData={chartData} dataEmpty={dataEmpty} grid={grid} maxValues={maxValues} />
+							</div>
+						}
+						description={t`Network traffic of public interfaces`}
+					>
+						<AreaChartDefault
+							chartData={chartData}
+							maxToggled={maxValues}
+							dataPoints={[
+								{
+									label: t`Sent`,
+									// use bytes if available, otherwise multiply old MB (can remove in future)
+									dataKey(data: SystemStatsRecord) {
+										if (showMax) {
+											return data?.stats?.bm?.[0] ?? (data?.stats?.nsm ?? 0) * 1024 * 1024
+										}
+										return data?.stats?.b?.[0] ?? data?.stats?.ns * 1024 * 1024
+									},
+									color: 5,
+									opacity: 0.2,
+								},
+								{
+									label: t`Received`,
+									dataKey(data: SystemStatsRecord) {
+										if (showMax) {
+											return data?.stats?.bm?.[1] ?? (data?.stats?.nrm ?? 0) * 1024 * 1024
+										}
+										return data?.stats?.b?.[1] ?? data?.stats?.nr * 1024 * 1024
+									},
+									color: 2,
+									opacity: 0.2,
+								},
+							]
+								// try to place the lesser number in front for better visibility
+								.sort(() => (systemStats.at(-1)?.stats.b?.[1] ?? 0) - (systemStats.at(-1)?.stats.b?.[0] ?? 0))}
+							tickFormatter={(val) => {
+								const { value, unit } = formatBytes(val, true, userSettings.unitNet, false)
+								return `${toFixedFloat(value, value >= 10 ? 0 : 1)} ${unit}`
+							}}
+							contentFormatter={(data) => {
+								const { value, unit } = formatBytes(data.value, true, userSettings.unitNet, false)
+								return `${decimalString(value, value >= 100 ? 1 : 2)} ${unit}`
+							}}
+							showTotal={true}
+						/>
+					</ChartCard>
+
 					<ChartCard
 						empty={dataEmpty}
 						grid={grid}
@@ -565,60 +620,6 @@ export default memo(function SystemDetail({ id }: { id: string }) {
 							contentFormatter={({ value }) => {
 								const { value: convertedValue, unit } = formatBytes(value, true, userSettings.unitDisk, false)
 								return `${decimalString(convertedValue, convertedValue >= 100 ? 1 : 2)} ${unit}`
-							}}
-							showTotal={true}
-						/>
-					</ChartCard>
-
-					<ChartCard
-						empty={dataEmpty}
-						grid={grid}
-						title={t`Bandwidth`}
-						cornerEl={
-							<div className="flex gap-2">
-								{maxValSelect}
-								<NetworkSheet chartData={chartData} dataEmpty={dataEmpty} grid={grid} maxValues={maxValues} />
-							</div>
-						}
-						description={t`Network traffic of public interfaces`}
-					>
-						<AreaChartDefault
-							chartData={chartData}
-							maxToggled={maxValues}
-							dataPoints={[
-								{
-									label: t`Sent`,
-									// use bytes if available, otherwise multiply old MB (can remove in future)
-									dataKey(data: SystemStatsRecord) {
-										if (showMax) {
-											return data?.stats?.bm?.[0] ?? (data?.stats?.nsm ?? 0) * 1024 * 1024
-										}
-										return data?.stats?.b?.[0] ?? data?.stats?.ns * 1024 * 1024
-									},
-									color: 5,
-									opacity: 0.2,
-								},
-								{
-									label: t`Received`,
-									dataKey(data: SystemStatsRecord) {
-										if (showMax) {
-											return data?.stats?.bm?.[1] ?? (data?.stats?.nrm ?? 0) * 1024 * 1024
-										}
-										return data?.stats?.b?.[1] ?? data?.stats?.nr * 1024 * 1024
-									},
-									color: 2,
-									opacity: 0.2,
-								},
-							]
-								// try to place the lesser number in front for better visibility
-								.sort(() => (systemStats.at(-1)?.stats.b?.[1] ?? 0) - (systemStats.at(-1)?.stats.b?.[0] ?? 0))}
-							tickFormatter={(val) => {
-								const { value, unit } = formatBytes(val, true, userSettings.unitNet, false)
-								return `${toFixedFloat(value, value >= 10 ? 0 : 1)} ${unit}`
-							}}
-							contentFormatter={(data) => {
-								const { value, unit } = formatBytes(data.value, true, userSettings.unitNet, false)
-								return `${decimalString(value, value >= 100 ? 1 : 2)} ${unit}`
 							}}
 							showTotal={true}
 						/>
