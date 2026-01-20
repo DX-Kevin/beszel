@@ -163,37 +163,25 @@ export function SystemsTableColumns(viewMode: "table" | "grid"): ColumnDef<Syste
 			header: sortableHeader,
 		},
 		{
-			accessorFn: ({ info }) => info.cpu || undefined,
-			id: "cpu",
-			name: () => t`CPU`,
-			cell: TableCellWithMeter,
-			Icon: CpuIcon,
+			accessorFn: ({ info }) => info.bb || (info.b || 0) * 1024 * 1024 || undefined,
+			id: "net",
+			name: () => t`Net`,
+			size: 0,
+			Icon: EthernetIcon,
 			header: sortableHeader,
-		},
-		{
-			// accessorKey: "info.mp",
-			accessorFn: ({ info }) => info.mp || undefined,
-			id: "memory",
-			name: () => t`Memory`,
-			cell: TableCellWithMeter,
-			Icon: MemoryStickIcon,
-			header: sortableHeader,
-		},
-		{
-			accessorFn: ({ info }) => info.dp || undefined,
-			id: "disk",
-			name: () => t`Disk`,
-			cell: DiskCellWithMultiple,
-			Icon: HardDriveIcon,
-			header: sortableHeader,
-		},
-		{
-			accessorFn: ({ info }) => info.g || undefined,
-			id: "gpu",
-			name: () => "GPU",
-			cell: TableCellWithMeter,
-			Icon: GpuIcon,
-			header: sortableHeader,
+			cell(info) {
+				const sys = info.row.original
+				const userSettings = useStore($userSettings, { keys: ["unitNet"] })
+				if (sys.status === SystemStatus.Paused) {
+					return null
+				}
+				const { value, unit } = formatBytes((info.getValue() || 0) as number, true, userSettings.unitNet, false)
+				return (
+					<span className="tabular-nums whitespace-nowrap">
+						{decimalString(value, value >= 100 ? 1 : 2)} {unit}
+					</span>
+				)
+			},
 		},
 		{
 			id: "loadAverage",
@@ -246,25 +234,37 @@ export function SystemsTableColumns(viewMode: "table" | "grid"): ColumnDef<Syste
 			},
 		},
 		{
-			accessorFn: ({ info }) => info.bb || (info.b || 0) * 1024 * 1024 || undefined,
-			id: "net",
-			name: () => t`Net`,
-			size: 0,
-			Icon: EthernetIcon,
+			accessorFn: ({ info }) => info.cpu || undefined,
+			id: "cpu",
+			name: () => t`CPU`,
+			cell: TableCellWithMeter,
+			Icon: CpuIcon,
 			header: sortableHeader,
-			cell(info) {
-				const sys = info.row.original
-				const userSettings = useStore($userSettings, { keys: ["unitNet"] })
-				if (sys.status === SystemStatus.Paused) {
-					return null
-				}
-				const { value, unit } = formatBytes((info.getValue() || 0) as number, true, userSettings.unitNet, false)
-				return (
-					<span className="tabular-nums whitespace-nowrap">
-						{decimalString(value, value >= 100 ? 1 : 2)} {unit}
-					</span>
-				)
-			},
+		},
+		{
+			// accessorKey: "info.mp",
+			accessorFn: ({ info }) => info.mp || undefined,
+			id: "memory",
+			name: () => t`Memory`,
+			cell: TableCellWithMeter,
+			Icon: MemoryStickIcon,
+			header: sortableHeader,
+		},
+		{
+			accessorFn: ({ info }) => info.dp || undefined,
+			id: "disk",
+			name: () => t`Disk`,
+			cell: DiskCellWithMultiple,
+			Icon: HardDriveIcon,
+			header: sortableHeader,
+		},
+		{
+			accessorFn: ({ info }) => info.g || undefined,
+			id: "gpu",
+			name: () => "GPU",
+			cell: TableCellWithMeter,
+			Icon: GpuIcon,
+			header: sortableHeader,
 		},
 		{
 			accessorFn: ({ info }) => info.dt,
