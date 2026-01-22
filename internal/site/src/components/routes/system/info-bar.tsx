@@ -90,7 +90,7 @@ export default function InfoBar({
 			{
 				value: hostname,
 				Icon: MonitorIcon,
-				label: "Hostname",
+				label: t`Hostname`,
 				// hide if hostname is same as host or name
 				hide: hostname === system.host || hostname === system.name,
 			},

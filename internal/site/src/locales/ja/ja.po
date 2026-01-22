@@ -816,6 +816,10 @@ msgstr "Homebrew コマンド"
 msgid "Host / IP"
 msgstr "ホスト / IP"
 
+#: src/components/routes/system/info-bar.tsx
+msgid "Hostname"
+msgstr ""
+
 #. Context: Battery state
 #: src/lib/i18n.ts
 msgid "Idle"
