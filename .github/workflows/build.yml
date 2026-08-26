@@ -1,0 +1,46 @@
+name: Auto Build Beszel Binary
+
+on:
+  push:
+    branches:
+      - 'my-beszel-features-*'
+  workflow_dispatch: # <-- 确保这一行与 push 同级，无前置空格或缩进正确
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Build Hub UI (Frontend)
+        run: |
+          cd beszel/site
+          npm install
+          npm run build
+
+      - name: Build Linux Binaries (Backend)
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o beszel-hub ./beszel/cmd/hub
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o beszel-agent ./beszel/cmd/agent
+
+      - name: Upload Binaries Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: beszel-linux-amd64
+          path: |
+            beszel-hub
+            beszel-agent
