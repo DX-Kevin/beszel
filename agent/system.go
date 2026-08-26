@@ -171,9 +171,9 @@ func (a *Agent) getSystemStats(cacheTimeMs uint16) system.Stats {
 
 	// load average
 	if avgstat, err := load.Avg(); err == nil {
-		systemStats.LoadAvg[0] = avgstat.Load1
-		systemStats.LoadAvg[1] = avgstat.Load5
-		systemStats.LoadAvg[2] = avgstat.Load15
+		systemStats.LoadAvg[0] = utils.TwoDecimals(avgstat.Load1)
+		systemStats.LoadAvg[1] = utils.TwoDecimals(avgstat.Load5)
+		systemStats.LoadAvg[2] = utils.TwoDecimals(avgstat.Load15)
 		slog.Debug("Load average", "5m", avgstat.Load5, "15m", avgstat.Load15)
 	} else {
 		slog.Error("Error getting load average", "err", err)
@@ -343,7 +343,8 @@ func calculateHostMemoryUsage(v *mem.VirtualMemoryStat, htop bool) (used, cacheB
 	if htop {
 		used = saturatingSub(v.Total, v.Free, cacheBuff)
 	}
-	return used, cacheBuff, saturatingSub(v.SwapTotal, v.SwapFree, v.SwapCached)
+	// Cached swap pages still occupy swap slots and are included in `free`'s used value.
+	return used, cacheBuff, saturatingSub(v.SwapTotal, v.SwapFree)
 }
 
 // saturatingSub subtracts each value, returning zero on underflow.
