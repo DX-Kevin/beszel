@@ -11,40 +11,40 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 拉取代码（升级至 v5）
+      # 1. 拉取代码
       - name: Checkout Code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2. 配置 Node.js（升级至 v5，支持最新 Node 22/24 运行时）
+      # 2. 配置 Node.js
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      # 3. 配置 Go（升级至 v6）
+      # 3. 配置 Go
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v5
         with:
           go-version: '1.23'
 
       # 4. 编译前端 Hub UI
       - name: Build Hub UI (Frontend)
         run: |
-          cd beszel/site
+          cd internal/site
           npm install
           npm run build
 
       # 5. 交叉编译 Linux 纯静态二进制文件
       - name: Build Linux Binaries (Backend)
         run: |
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o beszel-hub ./beszel/cmd/hub
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o beszel-agent ./beszel/cmd/agent
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o beszel-hub ./cmd/hub || CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o beszel-hub ./internal/cmd/hub
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o beszel-agent ./cmd/agent || CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o beszel-agent ./internal/cmd/agent
 
-      # 6. 打包上传产物（升级至 v5）
+      # 6. 打包上传产物
       - name: Upload Binaries Artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: beszel-linux-amd64
           path: |
