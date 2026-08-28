@@ -1,52 +1,91 @@
-name: Auto Build Beszel Binary
+name: Build Beszel Binaries & Release
 
 on:
   push:
     branches:
-      - 'my-beszel-features-*'
-  workflow_dispatch:
+      - main
+      - master
+      - 'my-beszel-features*'
+    tags:
+      - 'v*' # 匹配打 Tag 触发，如 v1.0.0
+  workflow_dispatch: # 支持手动点击触发
 
 jobs:
   build:
+    name: Build and Release Binaries
     runs-on: ubuntu-latest
 
+    # 赋予创建/修改 Release 的写入权限
+    permissions:
+      contents: write
+
     steps:
-      # 1. 拉取代码
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      # 2. 配置 Node.js
-      - name: Setup Node.js
+      - name: Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '20'
 
-      # 3. 配置 Go
-      - name: Setup Go
+      - name: Setup Bun Environment
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Go Environment
         uses: actions/setup-go@v5
         with:
           go-version: '1.23'
+          cache: true
 
-      # 4. 编译前端 Hub UI
-      - name: Build Hub UI (Frontend)
+      - name: Build Web UI Front-end
         run: |
           cd internal/site
-          npm install
-          npm run build
+          rm -rf dist .vite node_modules/.cache
+          bun install
+          bun run build
 
-      # 5. 交叉编译 Linux 纯静态二进制文件
-      - name: Build Linux Binaries (Backend)
+      - name: Compile Go Binaries (Linux AMD64)
         run: |
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o beszel-hub ./cmd/hub || CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o beszel-hub ./internal/cmd/hub
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o beszel-agent ./cmd/agent || CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o beszel-agent ./internal/cmd/agent
+          mkdir -p dist
+          echo "Compiling Hub (Server)..."
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/beszel-hub ./internal/cmd/hub
+          
+          echo "Compiling Agent (Client)..."
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/beszel-agent ./internal/cmd/agent
 
-      # 6. 打包上传产物
-      - name: Upload Binaries Artifacts
+          # 打包为 tar.gz 压缩包，方便在 Release 里下载使用
+          cd dist
+          tar -czvf beszel-linux-amd64.tar.gz beszel-hub beszel-agent
+
+      - name: Verify Binary Files
+        run: |
+          ls -lh dist/
+          file dist/beszel-hub dist/beszel-agent
+
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: beszel-linux-amd64
           path: |
-            beszel-hub
-            beszel-agent
+            dist/beszel-hub
+            dist/beszel-agent
+            dist/beszel-linux-amd64.tar.gz
+          retention-days: 7
+
+      # 自动发布到 Releases 区 (仅在推送 Tag 或手动触发时运行)
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/beszel-hub
+            dist/beszel-agent
+            dist/beszel-linux-amd64.tar.gz
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
