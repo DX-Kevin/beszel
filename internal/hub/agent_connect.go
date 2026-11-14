@@ -165,6 +165,32 @@ func (acr *agentConnectRequest) updateSystemHost(systemId string) {
 	}
 }
 
+// updateSystemHost checks if the current connection's IP matches the system's recorded host
+// and updates it if they differ.
+func (acr *agentConnectRequest) updateSystemHost(systemId string) {
+	if systemId == "" {
+		return
+	}
+
+	systemRecord, err := acr.hub.FindRecordById("systems", systemId)
+	if err != nil {
+		return
+	}
+
+	currentIP := getRealIP(acr.req)
+	recordedHost := systemRecord.GetString("host")
+
+	// Only update if the IP is valid and different
+	if currentIP != "" && recordedHost != currentIP {
+		systemRecord.Set("host", currentIP)
+		if err := acr.hub.SaveNoValidate(systemRecord); err != nil {
+			slog.Error("Failed to auto-update agent host", "systemId", systemId, "err", err)
+		} else {
+			slog.Info("Auto-updated agent host", "name", systemRecord.GetString("name"), "new_ip", currentIP)
+		}
+	}
+}
+
 // validateAgentHeaders extracts and validates the token and agent version from HTTP headers.
 func (acr *agentConnectRequest) validateAgentHeaders(headers http.Header) (string, string, error) {
 	token := headers.Get("X-Token")
